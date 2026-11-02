@@ -1,0 +1,12 @@
+# 个人配置与运行产物，勿提交
+config.json
+_rsi_ledger.md
+.config.personal.json
+_rsi_ledger.local.md
+articles/
+pipeline/
+config/wecom-qr.png
+*.orig
+__pycache__/
+*.pyc
+.token_cache

@@ -1,0 +1,28 @@
+{
+  "_comment": "配置模板。复制本文件为 config.json 再填你的真实值；config.json 已被 .gitignore 排除，不会进版本库。也可以直接对 WorkBuddy 说「配置公众号流水线」跑向导自动生成。",
+  "ima_kb_id": "<知识库ID，形如 ima_kb_xxxxxx>",
+  "ima_kb_name": "<知识库名称>",
+  "ima_source_folder": "<素材来源文件夹ID，形如 folder_xxxx；留空=知识库根目录>",
+  "ima_source_folder_name": "<素材文件夹名>",
+  "ima_source_folder_path": "<素材文件夹路径，如 知识库/AI>",
+  "ima_source_subfolders": [
+    "<子文件夹名>: folder_xxxx"
+  ],
+  "ima_folder_articles": "<成稿回存文件夹ID；留空=根目录>",
+  "ima_folder_articles_name": "<成稿文件夹名>",
+  "author_name": "<你的笔名>",
+  "wechat_account_name": "<你的公众号名>",
+  "articles_per_day": 1,
+  "theme": "default",
+  "persona": {
+    "positioning": "<一句话定位：你帮谁解决什么问题>",
+    "target_readers": "<目标读者画像>",
+    "tone": "<语气，如：专业但不说教，第二人称>"
+  },
+  "topic_domains": ["<主题词1>", "<主题词2>", "<主题词3>"],
+  "hotspot_queries": ["<热点搜索词1>", "<热点搜索词2>"],
+  "benchmark_enabled": true,
+  "benchmark_queries": ["<找爆款的搜索词1>", "<找爆款的搜索词2>"],
+  "benchmark_accounts": [],
+  "benchmark_top_n": 3
+}
