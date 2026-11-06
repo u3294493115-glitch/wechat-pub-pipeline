@@ -35,10 +35,16 @@ else
 fi
 
 # 3. 关键脚本在位
-for s in setup_wizard.py diagnose.py md_to_html.py post_draft.py sync_to_ima_wb.py archive_article.sh compress_image.sh; do
+for s in setup_wizard.py diagnose.py md_to_html.py post_draft.py sync_to_ima_wb.py archive_article.sh compress_image.sh voice_lint.py render_check.py upload_image.py egress.py; do
   [ -f "${SKILL_DIR}/scripts/${s}" ] || { say "❌ 缺脚本 scripts/${s}"; FAIL=1; }
 done
-[ "${FAIL}" = 0 ] && say "✅ 9 个脚本在位"
+[ "${FAIL}" = 0 ] && say "✅ 12 个脚本在位（含 voice_lint / render_check / upload_image / egress）"
+
+# 3.5 课程参考（v3.5）
+for f in references/course-index.md references/yukunkun-7d-checklist.md; do
+  [ -f "${SKILL_DIR}/${f}" ] || { say "❌ 缺 ${f}（查课程方法会退化成全盘搜索）"; FAIL=1; }
+done
+[ "${FAIL}" = 0 ] && say "✅ 课程索引与七维度清单在位"
 
 # 4. 编码健康（BOM）
 for f in "${SKILL_DIR}"/scripts/*; do

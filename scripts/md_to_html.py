@@ -26,14 +26,22 @@ INLINE_RE = re.compile(
     r"(\*\*.+?\*\*|\*[^*]+?\*|`[^`]+?`|!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\))"
 )
 
+# 作者在 markdown 里手写的 <br/> 是想换行，不是想显示成字面标签。
+# 先整体 escape（防注入），再把换行标签还原回来。
+_BR_ESC_RE = re.compile(r"&lt;br\s*/?&gt;", re.I)
+
+
+def esc_text(s: str) -> str:
+    return _BR_ESC_RE.sub("<br/>", html.escape(s))
+
 
 def render_inline(text: str, t: dict) -> str:
     out, pos = [], 0
     for m in INLINE_RE.finditer(text):
-        out.append(html.escape(text[pos:m.start()]))
+        out.append(esc_text(text[pos:m.start()]))
         s = m.group(0)
         if s.startswith("**"):
-            out.append(f'<strong style="color:{t["primary"]};">{html.escape(s[2:-2])}</strong>')
+            out.append(f'<strong style="color:{t["primary"]};">{esc_text(s[2:-2])}</strong>')
         elif s.startswith("`"):
             out.append(f'<code style="background:{t["bg"]};padding:2px 6px;border-radius:4px;font-size:15px;color:{t["primary"]};">{html.escape(s[1:-1])}</code>')
         elif s.startswith("!["):
@@ -45,9 +53,9 @@ def render_inline(text: str, t: dict) -> str:
             label, href = a_m.group(1), a_m.group(2)
             out.append(f'<span style="color:{t["accent"]};text-decoration:underline;">{html.escape(label)}</span>')
         elif s.startswith("*"):
-            out.append(f"<em>{html.escape(s[1:-1])}</em>")
+            out.append(f"<em>{esc_text(s[1:-1])}</em>")
         pos = m.end()
-    out.append(html.escape(text[pos:]))
+    out.append(esc_text(text[pos:]))
     return "".join(out)
 
 
@@ -127,10 +135,15 @@ def md_to_html(md: str, title: str, theme: str) -> str:
             while i < len(lines) and lines[i].strip().startswith(">"):
                 quote_lines.append(lines[i].strip().lstrip(">").strip())
                 i += 1
+            # 逐行 render 后再用真正的 <br/> 拼接。
+            # 旧写法是先把多行 join 成 '<br/>'.join(...) 再整体 render_inline，
+            # 结果 <br/> 被 html.escape 成 &lt;br/&gt;，在微信里显示成字面 "<br/>"。
+            # 2026-11-01 那篇已发布文章就是这个症状（引用块里出现 "。<br/>上下文："）。
+            quote_html = "<br/>".join(render_inline(l, t) for l in quote_lines if l)
             body.append(
                 f'<blockquote style="border-left:4px solid {t["accent"]};background:{t["bg"]};'
                 f'margin:18px 0;padding:12px 16px;color:{t["sub"]};font-size:15px;line-height:1.8;">'
-                f"{render_inline('<br/>'.join(l for l in quote_lines if l), t)}</blockquote>"
+                f"{quote_html}</blockquote>"
             )
             continue
 

@@ -32,10 +32,23 @@ import urllib.request
 CRED_DIR = os.path.expanduser("~/.config/wechat")
 TOKEN_CACHE = os.path.join(CRED_DIR, ".token_cache")
 
+# 微信 API 必须直连，不能走系统代理。
+# 本机实测：走代理时出站是 IPv6（2409:8a55:...），而公众号 IP 白名单只认 IPv4，
+# 会随机报 40164 invalid ip。微信服务器在国内，本来也不需要代理。
+# 用空 ProxyHandler 建一个 opener，等同于 requests 的 trust_env=False。
+_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+# 绕开代理还不够：Windows 默认 IPv6 优先，Python 直连出去仍是 IPv6（实测），
+# 白名单加不进去。必须把 DNS 解析锁死 AF_INET，出口才是那个 IPv4。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from egress import force_ipv4  # noqa: E402
+
+force_ipv4()
+
 
 def http_json(url, data=None, headers=None, timeout=30):
     req = urllib.request.Request(url, data=data, headers=headers or {}, method="POST" if data is not None else "GET")
-    with urllib.request.urlopen(req, timeout=timeout) as resp:
+    with _OPENER.open(req, timeout=timeout) as resp:
         return json.loads(resp.read().decode("utf-8"))
 
 
@@ -80,7 +93,7 @@ def upload_cover(token: str, cover_path: str) -> str:
     ).encode("utf-8") + img + f"\r\n--{boundary}--\r\n".encode("utf-8")
     url = f"https://api.weixin.qq.com/cgi-bin/material/add_material?type=image&access_token={token}"
     req = urllib.request.Request(url, data=body, headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with _OPENER.open(req, timeout=60) as resp:
         r = json.loads(resp.read().decode("utf-8"))
     if "media_id" not in r:
         raise RuntimeError(f"封面上传失败: {r}")
@@ -188,8 +201,8 @@ def main():
             import re as _re
             ip_m = _re.search(r"invalid ip (\d+\.\d+\.\d+\.\d+)", errmsg)
             ip = ip_m.group(1) if ip_m else "<本机出口IP>"
-            reason = (f"IP 白名单未包含本机出口 {ip}——请到公众号后台「设置与开发→基本配置→IP白名单」"
-                      f"添加 {ip} 后重跑")
+            reason = (f"IP 白名单未包含 {ip}——到公众号后台「设置与开发→基本配置→IP白名单」"
+                      f"添加 {ip} 后重跑（代理不用关，脚本已强制直连 IPv4；换网后 IP 会变）")
             print(json.dumps(local_fallback(html_path, args.cover, args.title, reason), ensure_ascii=False))
             return
         # 其余 API 失败也降级本地包，绝不丢稿
